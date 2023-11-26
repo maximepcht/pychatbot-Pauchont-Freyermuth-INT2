@@ -1,5 +1,6 @@
 import os
 import math
+from collections import Counter
 folder_path = r'C:\Users\ylanf\Desktop\L1 INT2\INFORMATIQUE\ChatBotProjectVs\speeches'
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -69,3 +70,142 @@ def removingPunctuation(cleaned):
 #removingPunctuation(NoPonct_path)
 
 #--------------------------------------------------------------------------------------------------------------------------------
+
+# this function split the text into words and count occurrences of each words using Counter
+def tf(text):
+    word_count = Counter(text.split())
+    
+    return dict(word_count)
+
+#--------------------------------------------------------------------------------------------------------------------------------
+
+# this function measures the importance of a term in the entire corpus of documents.
+def idf(corpus_directory):
+    # first we count the number of documents in the corpus
+    total_documents = len(os.listdir(corpus_directory))
+
+    # then we create a diictionary to store the number of documents containing each word
+    document_frequency = {}
+
+    # we use a loop to go through each document in the corpus
+    for filename in os.listdir(corpus_directory):
+        with open(os.path.join(corpus_directory, filename), 'r', encoding='utf-8') as file:
+            content = file.read()
+            words = set(content.split())
+
+            # we update the document frequency for each word
+            for word in words:
+                document_frequency[word] = document_frequency.get(word, 0) + 1
+
+    # finally we calculate IDF scores for each word
+    idf_scores = {word: math.log(total_documents / (1 + document_frequency[word])) for word in document_frequency}
+
+    return idf_scores
+
+#--------------------------------------------------------------------------------------------------------------------------------
+
+# function to do the tf-idf
+
+def tf_idf_matrix(corpus_directory):
+    files = [os.path.join(corpus_directory, filename) for filename in os.listdir(corpus_directory)]
+
+    tf_idf_matrix = []
+            
+            # Calculate TF scores
+            tf_scores = {word: count / len(words) for word, count in word_count.items()}
+
+            # Calculate IDF scores
+            idf_scores = idf(file_path, files)
+
+            # Calculate TF-IDF scores
+            tf_idf_scores = {word: tf_scores[word] * idf_scores[word] for word in words}
+
+            # Append TF-IDF scores to the matrix
+            tf_idf_matrix.append(tf_idf_scores)
+
+    return tf_idf_matrix
+
+#--------------------------------------------------------------------------------------------------------------------------------
+
+def least_important_words(tf_idf_matrix):
+    # Find the least important words in all files
+    least_important_words = []
+
+    for document_scores in tf_idf_matrix:
+        for word, tf_idf_score in document_scores.items():
+            if tf_idf_score == 0:
+                least_important_words.add(word)
+
+    return least_important_words
+
+#--------------------------------------------------------------------------------------------------------------------------------
+
+def most_important_words(tf_idf_matrix):
+    # Find the most important words in all files
+    most_important_words = []
+
+    all_document_scores = [word_score for document_scores in tf_idf_matrix for word_score in document_scores.items()]
+
+    max_score = max(all_document_scores, key=lambda x: x[1])[1]
+    most_important_words = {word for word, score in all_document_scores if score == max_score}
+
+    return most_important_words
+
+#--------------------------------------------------------------------------------------------------------------------------------
+
+def most_repeated_words(tf_idf_matrix, president_name):
+    # Find the most repeated word in the speeches of a president
+    president_words = []
+
+    # tf-idf for only the speech of the president
+    president_matrix = [doc_scores for doc_scores in tf_idf_matrix if president_name.lower() in doc_scores]
+
+    president_document_scores = [word_score for document_scores in president_matrix for word_score in document_scores.items()]
+
+    max_word_count = max(Counter(president_document_scores).values())
+    president_words = {word for word, count in Counter(president_document_scores).items() if count == max_word_count}
+
+    return president_words
+
+#--------------------------------------------------------------------------------------------------------------------------------
+
+def president_repeated_nation(tf_idf_matrix, president_name):
+    presidents = set()
+    president_word_counts = {}
+
+    for doc_scores in tf_idf_matrix:
+
+        president_name = [word for word in doc_scores.keys() if word in ["chirac", "giscrad", "mitterrand", "macron", "sarkozy","hollande"]]
+
+        if president_name:
+            president_name = president_name[0]
+            presidents.add(president_name)
+
+            # Count occurrences of the word "Nation"
+            nation_count = doc_scores.get("nation", 0)
+            current_count = president_word_counts.get(president_name, 0)
+            president_word_counts[president_name] = current_count + nation_count
+
+    # Find the president who repeated most the word "Nation"
+    most_repeated_president = max(president_word_counts, key=president_word_counts.get)
+
+    return most_repeated_president
+
+#--------------------------------------------------------------------------------------------------------------------------------
+
+# Find the first president who talked about climate or ecology
+def first_climate_ecology(tf_idf_matrix):
+    first_president = None
+
+    for doc_scores in tf_idf_matrix:
+
+        if "climat" in doc_scores or "ecologie" in doc_scores:
+            president_name = [word for word in doc_scores.keys() if word in ["chirac", "giscrad", "mitterrand", "macron", "sarkozy","hollande"]]
+
+            if president_name:
+                first_president = president_name[0]
+                break
+
+    return first_president
+
+
