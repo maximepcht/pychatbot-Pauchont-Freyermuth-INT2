@@ -208,4 +208,48 @@ def first_climate_ecology(tf_idf_matrix):
 
     return first_president
 
+#--------------------------------------------------------------------------------------------------------------------------------
+
+def display_menu():
+    print("----- Menu -----")
+    print("1. List of least important words")
+    print("2. Words with the highest TF-IDF score")
+    print("3. Most repeated words by Chirac")
+    print("4. Presidents who spoke the most of the 'Nation'")
+    print("5. First president to talk about climate and ecology")
+    print("6. Words mentioned by all presidents except 'unimportant' words") #not done yet
+    print("7. Exit")
+
+def main_menu():
+
+    while True:
+        display_menu()
+        choice = input("Enter your choice (1-7): ")
+
+        if choice == "1":
+            least_important_words(tf_idf_matrix)
+
+        elif choice == "2":
+            most_important_words(tf_idf_matrix)
+
+        elif choice == "3":
+            most_repeated_words(tf_idf_matrix, president_name)
+
+        elif choice == "4":
+            president_nation(tf_idf_matrix, president_name)
+
+        elif choice == "5":
+            first_climate_ecology(tf_idf_matrix)
+
+        elif choice == "6":
+            #not done yet
+
+        elif choice == "7":
+            print("Goodbye!")
+            break
+
+        else:
+            print("Invalid choice. Please enter a number between 1 and 7.")
+
+
 
