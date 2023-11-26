@@ -242,7 +242,7 @@ def main_menu():
             first_climate_ecology(tf_idf_matrix)
 
         elif choice == "6":
-            #not done yet
+            print("Not done yet")
 
         elif choice == "7":
             print("Goodbye!")
