@@ -1,1 +1,68 @@
-#Ok c'est bon je peux momdif
+import os
+folder_path = r'C:\Users\ylanf\Desktop\L1 INT2\INFORMATIQUE\ChatBotProjectVs\speeches'
+
+#--------------------------------------------------------------------------------------------------------------------------------
+def list_of_files(directory, extension):
+    files_names = []
+    for filename in os.listdir(directory):
+        if filename.endswith(extension):
+            files_names.append(filename)
+    return files_names
+
+#--------------------------------------------------------------------------------------------------------------------------------
+def hard_code_names(folder_path):
+    names = ('chirac', 'giscard', 'hollande', 'macron', 'mitterand', 'sarkozy')
+    names2 = ('Chirac', 'Giscard', 'Hollande', 'Macron', 'Mitterand', 'Sarkozy')
+    file_names = os.listdir(folder_path)
+    president_names = set()
+
+    for file_name in file_names:
+        for i in range(len(names)):
+            if names[i].lower() in file_name.lower():
+                president_names.add(names2[i])
+
+    return president_names
+
+#nompres = hard_code_names(folder_path)
+#for name in nompres:
+    #print(name)
+
+#--------------------------------------------------------------------------------------------------------------------------------
+def cleaning(folder_path, cleaned):
+    if not os.path.exists(cleaned):
+        os.makedirs(cleaned)
+
+    file_names = os.listdir(folder_path)
+    for file_name in file_names:
+        input_file_path = os.path.join(folder_path, file_name)
+        output_file_path = os.path.join(cleaned, file_name)
+
+        with open(input_file_path, 'r') as input_file:
+            content = input_file.read().lower()
+
+        with open(output_file_path, 'w') as output_file:
+            output_file.write(content)
+
+#output_folder = r'cleaned'
+#cleaning(folder_path, output_folder)
+
+#--------------------------------------------------------------------------------------------------------------------------------
+def removingPunctuation(cleaned):
+    punctuation = (',', "'", '-', '_', '.', ':', '/', '?', '!', '(', ')')
+    file_names = os.listdir(cleaned)
+
+    for file_name in file_names:
+        input_file_path = os.path.join(cleaned, file_name)
+        with open(input_file_path, 'r') as input_file:
+            content = input_file.read()
+            content_without_ponct = content
+
+            for punct in punctuation:
+                if punct in content_without_ponct:
+                    content_without_ponct = content_without_ponct.replace(punct, '')
+
+        with open(input_file_path, 'w') as output_file:
+            output_file.write(content_without_ponct)
+
+#NoPonct_path = r'C:\Users\ylanf\Desktop\L1 INT2\INFORMATIQUE\ChatBotProjectVs\cleaned'
+#removingPunctuation(NoPonct_path)
