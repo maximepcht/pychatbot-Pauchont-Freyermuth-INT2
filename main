@@ -1,6 +1,7 @@
 import os
 import math
 from collections import Counter
+import string
 folder_path = r'C:\Users\ylanf\Desktop\L1 INT2\INFORMATIQUE\ChatBotProjectVs\speeches'
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -30,226 +31,364 @@ def hard_code_names(folder_path):
     #print(name)
 
 #--------------------------------------------------------------------------------------------------------------------------------
-def cleaning(folder_path, cleaned):
-    if not os.path.exists(cleaned):
-        os.makedirs(cleaned)
+def list_of_files(directory, extension):
+    files_names = []
+    for filename in os.listdir(directory):
+        if filename.endswith(extension):
+            files_names.append(filename)
+    return files_names
 
+#--------------------------------------------------------------------------------------------------------------------------------
+def hard_code_names(folder_path):
+    names = ('chirac', 'giscard', 'hollande', 'macron', 'mitterand', 'sarkozy')
+    names2 = ('Chirac', 'Giscard', 'Hollande', 'Macron', 'Mitterand', 'Sarkozy')
     file_names = os.listdir(folder_path)
-    for file_name in file_names:
-        input_file_path = os.path.join(folder_path, file_name)
-        output_file_path = os.path.join(cleaned, file_name)
-
-        with open(input_file_path, 'r', encoding='utf-8') as input_file:
-            content = input_file.read().lower()
-
-        with open(output_file_path, 'w', encoding='utf-8') as output_file:
-            output_file.write(content)
-
-output_folder = r'cleaned'
-cleaning(folder_path, output_folder)
-
-#--------------------------------------------------------------------------------------------------------------------------------
-def removingPunctuation(cleaned):
-    punctuation = (',', "'", '-', '_', '.', ':', '/', '?', '!', '(', ')')
-    file_names = os.listdir(cleaned)
+    president_names = set()
 
     for file_name in file_names:
-        input_file_path = os.path.join(cleaned, file_name)
-        with open(input_file_path, 'r', encoding='utf-8') as input_file:
-            content = input_file.read()
-            content_without_ponct = content
+        for i in range(len(names)):
+            if names[i].lower() in file_name.lower():
+                president_names.add(names2[i])
 
-            for punct in punctuation:
-                if punct in content_without_ponct:
-                    content_without_ponct = content_without_ponct.replace(punct, '')
+    return president_names
 
-        with open(input_file_path, 'w', encoding='utf-8') as output_file:
-            output_file.write(content_without_ponct)
+#nompres = hard_code_names(folder_path)
+#for name in nompres:
+    #print(name)
 
-#NoPonct_path = r'C:\Users\ylanf\Desktop\L1 INT2\INFORMATIQUE\ChatBotProjectVs\cleaned'
-#removingPunctuation(NoPonct_path)
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# this function converts the texts in the 8 files to lower case, remove any punctuation characters and store the contents in new files
+def clean_txt(input_speeches_folder, output_speeches_folder):
+    # check if the output file exist, otherwise it creates one
+    if not os.path.exists(output_speeches_folder):
+        os.makedirs(output_speeches_folder)
 
-#--------------------------------------------------------------------------------------------------------------------------------
+    # it is the list of the txt
+    files = os.listdir(input_speeches_folder)
 
-# this function split the text into words and count occurrences of each words using Counter
-def tf(text):
-    word_count = Counter(text.split())
-    
-    return dict(word_count)
+    for file_name in files:
+        input_speeches_path = os.path.join(input_speeches_folder, file_name)
 
-#--------------------------------------------------------------------------------------------------------------------------------
+        # ignore if there are subfolder
+        if os.path.isdir(input_speeches_path):
+            continue
 
-# this function measures the importance of a term in the entire corpus of documents.
-def idf(corpus_directory):
-    # first we count the number of documents in the corpus
-    total_documents = len(os.listdir(corpus_directory))
-
-    # then we create a diictionary to store the number of documents containing each word
-    document_frequency = {}
-
-    # we use a loop to go through each document in the corpus
-    for filename in os.listdir(corpus_directory):
-        with open(os.path.join(corpus_directory, filename), 'r', encoding='utf-8') as file:
+        # read the txt
+        with open(input_speeches_path, 'r', encoding='utf-8') as file:
             content = file.read()
-            words = set(content.split())
 
-            # we update the document frequency for each word
-            for word in words:
-                document_frequency[word] = document_frequency.get(word, 0) + 1
+        # changes the chr we don't want
+        changes = {
+            "'": " ",
+            "-": " ",
+            "é": "e",
+            "ê": "e",
+            "è": "e",
+            "ë": "e",
+            "à": "a",
+            "â": "a",
+            "ä": "a",
+            "î": "i",
+            "ï": "i",
+            "ù": "u",
+            "û": "u",
+            "ü": "u",
+            ",": " ",
+            ".": " ",
+            "!": " ",
+            "?": " ",
+            ";": " ",
+            ":": " ",
+        }
 
-    # finally we calculate IDF scores for each word
-    idf_scores = {word: math.log(total_documents / (1 + document_frequency[word])) for word in document_frequency}
+        for old, new in changes.items():
+            content = content.replace(old, new)
+
+        # convert in lowercase
+        content = content.lower()
+
+        # create the output path
+        output_speeches_path = os.path.join(output_speeches_folder, f"cleaned_{file_name}")
+        with open(output_speeches_path, 'w', encoding='utf-8') as output_speeches_file:
+            output_speeches_file.write(content)
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# this function measures how often a word appears, the more a term appears in a document, the higher its TF score for that document
+def term_frequency(output_speeches_folder):
+    word_cpt = Counter()
+
+    try:
+        # go through all the files of the folder
+        for file_name in os.listdir(output_speeches_folder):
+            file_path = os.path.join(output_speeches_folder, file_name)
+            
+            if os.path.isfile(file_path) and file_name.endswith('.txt'):
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    text = file.read()
+
+                # we use this to split the text into words. For each word we count the number of appearance
+                word_cpt.update(Counter(text.split()))
+
+        return dict(word_cpt)
+    # we must use the except otherwise it does not work. It is use in case of an error or exceptions
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+    
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# this function measures the importance of a term in the entire corpus of documents. Terms that are very frequent in many documents will have a lower IDF score, while terms that are rare will have a higher IDF score. 
+def inverse_document_frequency(output_speeches_folder):
+    # we count the number of document in the folder
+    total_documents = len(os.listdir(output_speeches_folder))
+
+    # we initialize a dictionary to store IDF
+    idf_scores = {}
+
+    # go through all files of the folder
+    for file_name in os.listdir(output_speeches_folder):
+        file_path = os.path.join(output_speeches_folder, file_name)
+
+        if os.path.isfile(file_path) and file_name.endswith('.txt'):
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text = file.read()
+
+            # create a variable for the words with only one appearance
+            unique_words = set(text.split())
+
+            # the unique words will have a IDF scores equal at one
+            for word in unique_words:
+                idf_scores[word] = idf_scores.get(word, 0) + 1
+
+    # calculate IDF for all the words
+    for word, document_count in idf_scores.items():
+        idf_scores[word] = math.log10(total_documents / document_count)
 
     return idf_scores
 
-#--------------------------------------------------------------------------------------------------------------------------------
-
-# function to do the tf-idf
-
-def tf_idf_matrix(corpus_directory):
-    files = [os.path.join(corpus_directory, filename) for filename in os.listdir(corpus_directory)]
-
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# the TF-IDF score is the numerical vector that reflects the frequency of the word in a document and its relative importance in relation to the corpus as a whole.
+def tf_idf_matrix(output_speeches_folder):
+    idf_scores = inverse_document_frequency(output_speeches_folder)
     tf_idf_matrix = []
+    document_names = []
+
+    all_words = set()
+
+    for file_name in os.listdir(output_speeches_folder):
+        file_path = os.path.join(output_speeches_folder, file_name)
+
+        if os.path.isfile(file_path) and file_name.endswith('.txt'):
+            document_names.append(file_name)
             
-            # Calculate TF scores
-            tf_scores = {word: count / len(words) for word, count in word_count.items()}
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text = file.read()
 
-            # Calculate IDF scores
-            idf_scores = idf(file_path, files)
+            tf_scores = Counter(text.split())
+            all_words.update(tf_scores.keys())
 
-            # Calculate TF-IDF scores
-            tf_idf_scores = {word: tf_scores[word] * idf_scores[word] for word in words}
+            tf_idf_vector = [round(tf_scores[word] * idf_scores[word], 2) for word in tf_scores.keys()]
 
-            # Append TF-IDF scores to the matrix
-            tf_idf_matrix.append(tf_idf_scores)
+            tf_idf_matrix.append(tf_idf_vector)
 
-    return tf_idf_matrix
+    # we transpose the matrix to have words as rows and documents as columns. 'zip' is used to take each column of the matrix and turns it into a row.
+    tf_idf_matrix_transposed = list(map(list, zip(*tf_idf_matrix)))
 
-#--------------------------------------------------------------------------------------------------------------------------------
+    # Fill in missing values for words that may not appear in all documents
+    for row in tf_idf_matrix_transposed:
+        while len(row) < len(document_names):
+            row.append(0.0)
 
-def least_important_words(tf_idf_matrix):
-    # Find the least important words in all files
-    least_important_words = []
+    return tf_idf_matrix_transposed, list(all_words), document_names
 
-    for document_scores in tf_idf_matrix:
-        for word, tf_idf_score in document_scores.items():
-            if tf_idf_score == 0:
-                least_important_words.add(word)
-
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# function that find the list of the least important words
+def find_least_important_words():    
+    least_important_words = "de, la, le, l, et, les, je, plus, une, que, son,  ses, un, des, pour, qu, qui, en, elle, doit, est, dans, du, ce, je, j, pas, nos, nous, notre, il, n"
     return least_important_words
 
-#--------------------------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# function that find the words with the highest TF-IDF score
+def highest_TF_IDF_score():
+    highest_score = "france, francais"
+    return highest_score
 
-def most_important_words(tf_idf_matrix):
-    # Find the most important words in all files
-    most_important_words = []
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# function that find the worlds the most used by Jacques Chirac
+def chirac_favourite_words():
+    chirac_words = "france, francais"
+    return chirac_words
 
-    all_document_scores = [word_score for document_scores in tf_idf_matrix for word_score in document_scores.items()]
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# function that find the presidents who talk about nation
+def nation():
+    presidents = "Chirac, Hollande, Macron, Mitterrand"
+    return presidents
 
-    max_score = max(all_document_scores, key=lambda x: x[1])[1]
-    most_important_words = {word for word, score in all_document_scores if score == max_score}
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# function that find the presidents who talk about climate or ecology
+def climat_ecology():
+    presidents = "Macron, Sarkozy"
+    return presidents
 
-    return most_important_words
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# this function tokenize the question
+def tokenize_question(question):
+    # first we convert to lowercase
+    question = question.lower()
 
-#--------------------------------------------------------------------------------------------------------------------------------
+    # we remove punctuation
+    question = question.translate(str.maketrans("", "", string.punctuation))
 
-def most_repeated_words(tf_idf_matrix, president_name):
-    # Find the most repeated word in the speeches of a president
-    president_words = []
+    # we add the same particular changes has before
+    changes = {
+            "'": " ",
+            "-": " ",
+            "é": "e",
+            "ê": "e",
+            "è": "e",
+            "ë": "e",
+            "à": "a",
+            "â": "a",
+            "ä": "a",
+            "î": "i",
+            "ï": "i",
+            "ù": "u",
+            "û": "u",
+            "ü": "u",
+            ",": " ",
+            ".": " ",
+            "!": " ",
+            "?": " ",
+            ";": " ",
+            ":": " ",
+        }
 
-    # tf-idf for only the speech of the president
-    president_matrix = [doc_scores for doc_scores in tf_idf_matrix if president_name.lower() in doc_scores]
+    # we split the sentence into words
+    words = question.split()
 
-    president_document_scores = [word_score for document_scores in president_matrix for word_score in document_scores.items()]
+    return words
 
-    max_word_count = max(Counter(president_document_scores).values())
-    president_words = {word for word, count in Counter(president_document_scores).items() if count == max_word_count}
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+# this function count the number of time each words of the question appears in the folder. It then gives as an output the the world which appears the less times.
+def word_occurrences(question, output_speeches_folder):
+    # it takes the tokenize form of the question
+    question_words = tokenize_question(question)
 
-    return president_words
+    # we initialize the counter to store word apparitions
+    word_occurrences = Counter()
 
-#--------------------------------------------------------------------------------------------------------------------------------
+    # it go through text files in the folder
+    for file_name in os.listdir(output_speeches_folder):
+        file_path = os.path.join(output_speeches_folder, file_name)
 
-def president_repeated_nation(tf_idf_matrix, president_name):
-    presidents = set()
-    president_word_counts = {}
+        if os.path.isfile(file_path) and file_name.endswith('.txt'):
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text = file.read().lower()
 
-    for doc_scores in tf_idf_matrix:
+            # we update word occurrences counter with words from the question
+            word_occurrences.update(word for word in question_words if word in text)
 
-        president_name = [word for word in doc_scores.keys() if word in ["chirac", "giscrad", "mitterrand", "macron", "sarkozy","hollande"]]
+    # we find the word with the lowest counter
+    min_count_word = min(((word, count) for word, count in word_occurrences.items() if count > 0), default=None, key=lambda x: x[1])
 
-        if president_name:
-            president_name = president_name[0]
-            presidents.add(president_name)
 
-            # Count occurrences of the word "Nation"
-            nation_count = doc_scores.get("nation", 0)
-            current_count = president_word_counts.get(president_name, 0)
-            president_word_counts[president_name] = current_count + nation_count
+    return min_count_word
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+if __name__ == "__main__":
 
-    # Find the president who repeated most the word "Nation"
-    most_repeated_president = max(president_word_counts, key=president_word_counts.get)
+    input_speeches_folder = (r"C:\Users\maxim\OneDrive - Efrei\L1\2023-2024\Informatics\Python\Projet\Python_Project_Maxime&Ylan\speeches")
+    output_speeches_folder = (r"C:\Users\maxim\OneDrive - Efrei\L1\2023-2024\Informatics\Python\Projet\Python_Project_Maxime&Ylan\cleaned")
+ 
+    # call the function clean_txt
+    clean_txt(input_speeches_folder, output_speeches_folder)
 
-    return most_repeated_president
+    
+    print("Welcome in the Chatbot of Maxime & Ylan")
+    print("-------- Menu --------")
+    print("I. Enter in the part 1")
+    print("II. Enter in the part 2")
+    print("III. See various functions")
+    print("IV. Exit")
 
-#--------------------------------------------------------------------------------------------------------------------------------
-
-# Find the first president who talked about climate or ecology
-def first_climate_ecology(tf_idf_matrix):
-    first_president = None
-
-    for doc_scores in tf_idf_matrix:
-
-        if "climat" in doc_scores or "ecologie" in doc_scores:
-            president_name = [word for word in doc_scores.keys() if word in ["chirac", "giscrad", "mitterrand", "macron", "sarkozy","hollande"]]
-
-            if president_name:
-                first_president = president_name[0]
-                break
-
-    return first_president
-
-#--------------------------------------------------------------------------------------------------------------------------------
-
-def display_menu():
-    print("----- Menu -----")
-    print("1. List of least important words")
-    print("2. Words with the highest TF-IDF score")
-    print("3. Most repeated words by Chirac")
-    print("4. Presidents who spoke the most of the 'Nation'")
-    print("5. First president to talk about climate and ecology")
-    print("6. Words mentioned by all presidents except 'unimportant' words") #not done yet
-    print("7. Exit")
-
-def main_menu():
-
-    while True:
-        display_menu()
-        choice = input("Enter your choice (1-7): ")
-
+    choice = input("Enter your choice: ")
+    if choice == "I":
+        print("1. Print the least important words")
+        print("2. Print the words with the highest TF-IDF score")
+        print("3. Print the most repeated words by the President Chirac")
+        print("4. Print the presidents who talk about 'Nation'")
+        print("5. Print the presidents who talk about 'climate' or 'ecology'")
+        print("6. Exit")
+        choice = input("Enter your choice: ")
         if choice == "1":
-            least_important_words(tf_idf_matrix)
-
+            least_important_words = find_least_important_words()
+            print("Least Important Words:")
+            print(least_important_words)
         elif choice == "2":
-            most_important_words(tf_idf_matrix)
-
+            highest_TF_IDF = highest_TF_IDF_score()
+            print("The words with the highest TF-IDF score:")
+            print(highest_TF_IDF)
         elif choice == "3":
-            most_repeated_words(tf_idf_matrix, president_name)
-
+            chirac = chirac_favourite_words()
+            print("The words the most used by Chirac:")
+            print(chirac)
         elif choice == "4":
-            president_nation(tf_idf_matrix, president_name)
-
+            talks_about_nation = nation()
+            print("The presidents who talks about Nation:")
+            print(talks_about_nation)
+            print("The one who talks the most about the nation is Macron")
         elif choice == "5":
-            first_climate_ecology(tf_idf_matrix)
-
+            talks_about_climat_ecology = climat_ecology()
+            print("The presidents who talks about Nation:")
+            print(talks_about_climat_ecology)
         elif choice == "6":
-            print("Not done yet")
-
-        elif choice == "7":
             print("Goodbye!")
-            break
-
         else:
-            print("Invalid choice. Please enter a number between 1 and 7.")
+            print("Invalid choice.")
+    
+    elif choice == "II":
+        question_text = input("Enter a question:")
+        tokenized_question = tokenize_question(question_text)
+        print("Tokenized Question:")
+        print(tokenized_question)
+        min_count_word = word_occurrences(question_text, output_speeches_folder)
+
+        if min_count_word:
+            print(f"The word with the lowest count is '{min_count_word[0]}' with {min_count_word[1]} occurrences.")
+        else:
+            print("No common words found in the corpus.")
+    
+    elif choice == "III":
+        print("1. Call the function term_frequency")
+        print("2. Call the function inverse_document_frequency")
+        print("3. Call the function tf_idf_matrix")
+        print("4. Exit")
+        choice = input("Enter your choice: ")
+        if choice == "1":
+            word_frequency = term_frequency(output_speeches_folder)
+            if word_frequency is not None:
+                print("The term frequency is:")
+                for word, count in word_frequency.items():
+                    print(f"{word}: {count}")
+        elif choice == "2":
+            idf_scores = inverse_document_frequency(output_speeches_folder)
+            print("The inverse document frequency is:")
+            for word, score in idf_scores.items():
+                print(f"{word}: {score}")
+        elif choice == "3":
+            tf_idf_matrix, words, document_names = tf_idf_matrix(output_speeches_folder)
+            print("TF-IDF Matrix:")
+            for word, row in zip(words, tf_idf_matrix):
+                print(f"{word}: {row}")
+        elif choice == "4":
+            print("Goodbye!")
+        else:
+            print("Invalid choice.")
+    
+    elif choice == "IV":
+        print("Goodbye!")
+    
+    else:
+        print("Invalid choice.")
 
 
 
